@@ -1,0 +1,16 @@
+discord.py==2.4.0
+anthropic==0.34.2
+aiohttp==3.10.5
+beautifulsoup4==4.12.3
+playwright==1.46.0
+redis==5.0.8
+celery==5.4.0
+SQLAlchemy==2.0.34
+asyncpg==0.29.0
+alembic==1.13.2
+python-dotenv==1.0.1
+pydantic==2.8.2
+pydantic-settings==2.4.0
+loguru==0.7.2
+better-profanity==0.7.0
+psycopg2-binary==2.9.9
