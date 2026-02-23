@@ -1,0 +1,1 @@
+"""Esports monitoring scraper scaffold."""
