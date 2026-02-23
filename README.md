@@ -1,4 +1,4 @@
-# NEXUS (Step 2: Database + Ask Path + Go-Live)
+# NEXUS (Step 3: Moderation Pipeline + DB + Go-Live)
 
 NEXUS is an autonomous Discord governance agent scaffold. This repo now includes:
 
@@ -6,16 +6,17 @@ NEXUS is an autonomous Discord governance agent scaffold. This repo now includes
 - provider-routed Claude client
 - working `/nexus ask` decision path
 - PostgreSQL data models and async query layer
+- baseline autonomous moderation flow
 
 ## Implemented architecture status
 
 ### Runtime flow (implemented)
 
-`Discord Event -> Event Router -> Decision Engine -> Claude Client -> Discord Response`
+`Discord Event -> Event Router -> Decision Engine -> Claude Client -> Discord Response/Action`
 
 - Event router captures rolling message context (last 10 per channel)
-- Decision engine builds structured ask prompt
-- Claude provider route executes and returns answer
+- Decision engine builds structured ask/moderation prompts
+- Claude provider route executes and returns answer/decision
 
 ### Database layer (implemented)
 
@@ -33,6 +34,21 @@ NEXUS is an autonomous Discord governance agent scaffold. This repo now includes
 - App startup table initialization (`create_all`)
 - SQL bootstrap file: `database/migrations/001_init.sql`
 
+### Moderation layer (implemented baseline)
+
+- Reads all messages in accessible guild channels
+- Local suspicious pre-screen with `better-profanity` + custom flagged words
+- For flagged messages: sends full moderation context to Claude
+- Requires structured decision JSON:
+  - `action`: `warn|mute|kick|ban|ignore`
+  - `confidence`: `0-100`
+  - `reason`
+  - `duration_minutes`
+- Confidence gate:
+  - `< MOD_CONFIDENCE_THRESHOLD`: escalates to staff log channel
+  - `>= threshold`: executes action and logs to DB
+- Posts staff embed for each escalation/action with `✅` / `❌` reaction controls
+
 ## Quick start
 
 1. Copy env template:
@@ -45,6 +61,11 @@ cp .env.example .env
 - `SERVER_NAME`
 - `DISCORD_TOKEN`
 - AI provider config (`AI_PROVIDER` + matching keys)
+- `STAFF_LOG_CHANNEL_ID`
+- `MUTE_ROLE_ID`
+- `MOD_CONFIDENCE_THRESHOLD`
+- `SERVER_RULES_TEXT`
+- `CUSTOM_FLAGGED_WORDS` (JSON array)
 - `TWITCH_CLIENT_ID`
 - `TWITCH_CLIENT_SECRET`
 
@@ -62,9 +83,21 @@ docker compose logs -f nexus-bot
 
 ---
 
-## Fresh Ubuntu 24.04 VPS bring-up (your case)
+## CRITICAL Security note (token safety)
 
-Run these on your Hostinger VPS.
+If your Discord token has ever been pasted into chat or exposed publicly, rotate it immediately:
+
+1. Discord Developer Portal -> Bot -> **Reset Token**
+2. Replace `DISCORD_TOKEN` in `.env`
+3. Restart stack:
+
+```bash
+docker compose up -d --force-recreate nexus-bot
+```
+
+---
+
+## Fresh Ubuntu 24.04 VPS bring-up (your case)
 
 ### 1) Base packages + Docker
 
@@ -98,7 +131,7 @@ sudo ufw status
 
 ```bash
 cd /opt
-sudo git clone <your-repo-url> nexus
+sudo git clone https://github.com/blurry-clouds/Nexus.git nexus
 sudo chown -R $USER:$USER /opt/nexus
 cd /opt/nexus
 cp .env.example .env
@@ -154,11 +187,11 @@ Add:
 
 ---
 
-## Immediate next build steps (I can do these next)
+## Immediate next build steps
 
-1. Moderation execution pipeline (`on_message` pre-screen -> Claude JSON -> confidence gate -> enforce/log)
-2. Staff override learning loop (`✅` / `❌`)
-3. Celery beat schedule map for patch/news/esports/twitch
-4. Scraper implementations + Redis dedupe hashes
-5. Autonomous daily/weekly posting + quiet-server triggers
-6. Slash command completion: `/nexus patch`, `/nexus stats`, `/nexus schedule`, `/nexus playing`, `/nexus remember`
+1. Implement staff override learning from reactions (persist `mod_override=true`, strictness calibration)
+2. Add Redis-based rate limits + anti-spam guardrails
+3. Add Celery beat schedule map for patch/news/esports/twitch
+4. Implement scraper modules + relevance gating + dedupe hashes
+5. Implement autonomous daily/weekly posts + quiet-server triggers
+6. Complete slash commands: `/nexus patch`, `/nexus stats`, `/nexus schedule`, `/nexus playing`, `/nexus remember`
