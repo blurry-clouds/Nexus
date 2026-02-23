@@ -200,3 +200,8 @@ Add:
 ## PR conflict help
 
 If GitHub reports merge conflicts for your PR, follow `docs/PR_CONFLICTS.md` for a step-by-step rebase and resolution workflow.
+
+
+## Recovery branch note
+
+If PR conflicts blocked previous merges, use the recovery branch workflow in `docs/REPO_RECOVERY_STATUS.md`.
