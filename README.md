@@ -1,0 +1,2 @@
+# Nexus
+AI Discord Bot
